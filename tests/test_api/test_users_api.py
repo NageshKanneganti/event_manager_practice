@@ -4,6 +4,7 @@ from app.database import get_async_db
 from app.main import app
 from app.models.user_model import User
 from app.utils.security import hash_password  # Import your FastAPI app
+from uuid import uuid4  # To generate a random UUID
 
 # Example of a test function using the async_client fixture
 @pytest.mark.asyncio
@@ -31,13 +32,38 @@ async def test_create_user(async_client):
     assert response.status_code == 201
 
 # You can similarly refactor other test functions to use the async_client fixture
+# Tests for get_user
 @pytest.mark.asyncio
 async def test_retrieve_user(async_client, user, token):
     headers = {"Authorization": f"Bearer {token}"}
     response = await async_client.get(f"/users/{user.id}", headers=headers)
-    assert response.status_code == 200
-    assert response.json()["id"] == str(user.id)
+    response_data = response.json()
 
+    # Assert the HTTP status and user ID
+    assert response.status_code == 200
+    assert response_data["id"] == str(user.id)
+
+    # Additional assertions to verify all relevant fields are returned correctly
+    assert response_data["username"] == user.username
+    assert response_data["email"] == user.email
+    assert response_data["full_name"] == user.full_name  # Ensure this field exists in your User model
+    assert response_data["bio"] == user.bio            # Ensure this field exists in your User model
+    assert response_data["profile_picture_url"] == user.profile_picture_url  # Ensure this field exists
+
+@pytest.mark.asyncio
+async def test_get_nonexistent_user(async_client: AsyncClient, token: str):
+    # Generate a random UUID that will not match any user
+    non_existent_user_id = uuid4()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Make the request to the endpoint
+    response = await async_client.get(f"/users/{non_existent_user_id}", headers=headers)
+
+    # Assert that the response status code is 404
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User not found"
+
+# Tests for update_user
 @pytest.mark.asyncio
 async def test_update_user(async_client, user, token):
     updated_data = {"email": f"updated_{user.id}@example.com"}
