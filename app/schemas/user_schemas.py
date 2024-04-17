@@ -81,9 +81,27 @@ class UserBase(BaseModel):
     # Validators are used to validate the data
     @validator('username')
     def validate_username(cls, v):
-        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+        # Normalize the username to lower case
+        normalized_username = v.lower()
+        
+        # Check the total length of the normalized username
+        if len(normalized_username) < 3 or len(normalized_username) > 50:
+            raise ValueError("Username must be between 3 and 50 characters.") # pragma: no cover
+        
+        # Check for illegal characters
+        if any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789_-' for c in normalized_username):
             raise ValueError("Username can only contain letters, numbers, underscores, and hyphens.")
-        return v
+        
+        # Comprehensive pattern to check the normalized username structure.
+        pattern = re.compile(r'^[a-z][a-z0-9_-]{0,48}[a-z0-9]$')
+        if not pattern.match(normalized_username):
+            # Specific format errors after normalization
+            if not re.match(r'^[a-z]', normalized_username):
+                raise ValueError("Username must start with a letter.")
+            if not re.match(r'[a-z0-9]$', normalized_username):
+                raise ValueError("Username must end with a letter or number.")
+        
+        return normalized_username  # Return the normalized version for storage and further handling
 
     @validator('full_name')
     def validate_full_name(cls, v):

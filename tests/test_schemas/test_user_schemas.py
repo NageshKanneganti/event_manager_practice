@@ -83,17 +83,48 @@ def test_login_request_valid(login_request_data):
     assert login.password == login_request_data["password"]
 
 # Parametrized tests for username and email validation
-@pytest.mark.parametrize("username", ["test_user", "test-user", "testuser123", "123test"])
-def test_user_base_username_valid(username, user_base_data):
+@pytest.mark.parametrize("username, expected", [
+    ("test_user", "test_user"),
+    ("test-user", "test-user"),
+    ("testuser123", "testuser123"),
+    ("JOHN_Doe_123", "john_doe_123"),  # Normalization check
+    ("john_doe_123", "john_doe_123"),
+    ("John_DOE_123", "john_doe_123")
+])
+def test_user_base_username_valid_and_normalized(username, expected, user_base_data):
     user_base_data["username"] = username
     user = UserBase(**user_base_data)
-    assert user.username == username
+    assert user.username == expected, f"Username should be normalized and stored as {expected} but found {user.username}"
 
-@pytest.mark.parametrize("username", ["test user", "test?user", "", "us"])
-def test_user_base_username_invalid(username, user_base_data):
+# Combine tests for invalid usernames including start and end validations
+@pytest.mark.parametrize("username", [
+    "john doe", "john?doe", "1john", "john@", "jo", "a"*51, "_johndoe", "johndoe-",  # Invalid characters and lengths
+    "9john", "-johndoe", "johndoe_",  # Invalid start and end characters
+])
+def test_user_base_username_invalid(user_base_data, username):
     user_base_data["username"] = username
     with pytest.raises(ValidationError):
         UserBase(**user_base_data)
+
+# Test for boundary conditions of username length
+@pytest.mark.parametrize("username", ["abc", "a"*50])  # Minimum and maximum valid lengths
+def test_user_base_username_max_length_valid(user_base_data, username):
+    user_base_data["username"] = username
+    user = UserBase(**user_base_data)
+    assert len(user.username) == len(username), f"Username {username} should be exactly {len(username)} characters long."
+
+@pytest.mark.parametrize("username", ["ab", "abc*50"])  # Below minimum length
+def test_user_base_username_max_length_invalid(user_base_data, username):
+    user_base_data["username"] = username
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+# Test for usernames starting and ending correctly
+@pytest.mark.parametrize("username", ["aJohnDoe1", "z1234567890"])
+def test_user_base_username_start_end_valid(user_base_data, username):
+    user_base_data["username"] = username
+    user = UserBase(**user_base_data)
+    assert user.username[0].isalpha() and user.username[-1].isalnum(), "Username must start with a letter and end with an alphanumeric character."
 
 # Test Profile Picture URL Validation
 @pytest.mark.parametrize("url", [
