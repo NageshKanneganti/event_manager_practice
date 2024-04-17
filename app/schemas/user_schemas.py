@@ -73,6 +73,7 @@ class UserBase(BaseModel):
     )
     profile_picture_url: Optional[str] = Field(
         None,
+        max_length=255,
         description="The URL to the user's profile picture. Must point to a valid image file (e.g., JPEG, PNG).",
         example="https://example.com/profile_pictures/john_doe.jpg"
     )
@@ -94,9 +95,14 @@ class UserBase(BaseModel):
     def validate_profile_picture_url(cls, v):
         if v is None:
             return v  # If the URL is optional, allow None values
+        # Check if the URL exceeds the maximum length
+        if len(v) > 255:
+            raise ValueError("Profile picture URL must be at most 255 characters long.")
         parsed_url = urlparse(v)
         if not re.search(r"\.(jpg|jpeg|png)$", parsed_url.path):
             raise ValueError("Profile picture URL must point to a valid image file (JPEG, PNG).")
+        if parsed_url.scheme not in ['http', 'https']:
+            raise ValueError("Profile picture URL must use http or https.")
         return v
 
     class Config:
@@ -142,8 +148,8 @@ class UserCreate(UserBase):
                 "email": "john.doe@example.com",
                 "password": "SecurePassword123!",
                 "full_name": "John Doe",
-                "bio": "I am a data scientist passionate about machine learning and big data analytics.",
-                "profile_picture_url": "https://example.com/profile_pictures/jane_smith.jpg"
+                "bio": "I am a software engineer with over 5 years of experience in building scalable web applications using Python and JavaScript.",
+                "profile_picture_url": "https://example.com/profile_pictures/john_doe.jpg"
             }
         }
 
@@ -175,7 +181,7 @@ class UserUpdate(BaseModel):
     @validator('profile_picture_url', pre=True, always=True)
     def validate_profile_picture_url(cls, v):
         if v is not None:
-            parsed_url = urlparse(str(v))  # Convert the URL object to a string before parsing
+            parsed_url = urlparse(v)  # Convert the URL object to a string before parsing
             if not re.search(r"\.(jpg|jpeg|png)$", parsed_url.path):
                 raise ValueError("Profile picture URL must point to a valid image file (JPEG, PNG).")
         return v

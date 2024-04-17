@@ -10,7 +10,7 @@ def user_base_data():
         "username": "john_doe_123",
         "email": "john.doe@example.com",
         "full_name": "John Doe",
-        "bio": "I am a software engineer with over 5 years of experience.",
+        "bio": "I am a software engineer with over 5 years of experience in building scalable web applications using Python and JavaScript.",
         "profile_picture_url": "https://example.com/profile_pictures/john_doe.jpg"
     }
 
@@ -49,11 +49,19 @@ def test_user_base_valid(user_base_data):
     assert user.username == user_base_data["username"]
     assert user.email == user_base_data["email"]
 
+def test_user_base_config_example(user_base_data):
+    example = UserBase.Config.json_schema_extra['example']
+    assert UserBase(**example)
+
 # Tests for UserCreate
 def test_user_create_valid(user_create_data):
     user = UserCreate(**user_create_data)
     assert user.username == user_create_data["username"]
     assert user.password == user_create_data["password"]
+
+def test_user_create_config_example(user_base_data):
+    example = UserCreate.Config.json_schema_extra['example']
+    assert UserCreate(**example)
 
 # Tests for UserUpdate
 def test_user_update_partial(user_update_data):
@@ -84,5 +92,34 @@ def test_user_base_username_valid(username, user_base_data):
 @pytest.mark.parametrize("username", ["test user", "test?user", "", "us"])
 def test_user_base_username_invalid(username, user_base_data):
     user_base_data["username"] = username
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+# Test Profile Picture URL Validation
+@pytest.mark.parametrize("url", [
+    "https://example.com/profile_pictures/john_doe.jpg",
+    "https://example.com/profile_pictures/john_doe.jpeg",
+    "https://example.com/profile_pictures/john_doe.png"
+])
+def test_user_base_profile_picture_url_valid(url, user_base_data):
+    user_base_data["profile_picture_url"] = url
+    user = UserBase(**user_base_data)
+    # Convert the Url object to string using str() for comparison
+    assert user.profile_picture_url == url
+
+@pytest.mark.parametrize("url", [
+    "https://example.com/profile_pictures/john_doe.gif",  # Invalid file extension
+    "https://example.com/profile_pictures/john_doe.bmp",  # Invalid file extension
+    "ftp://example.com/profile_pictures/john_doe.jpg",    # Invalid scheme
+    "https://example.com/profile_pictures/john_doe"       # No file extension
+])
+def test_user_base_profile_picture_url_invalid(url, user_base_data):
+    user_base_data["profile_picture_url"] = url
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+@pytest.mark.parametrize("profile_picture_url", ["https://" + "example.com/" + "a" * 255 + ".jpg"])
+def test_profile_picture_url_length_exceeded(profile_picture_url, user_base_data):
+    user_base_data["profile_picture_url"] = profile_picture_url
     with pytest.raises(ValidationError):
         UserBase(**user_base_data)
