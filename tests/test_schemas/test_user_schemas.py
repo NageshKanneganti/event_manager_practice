@@ -154,3 +154,27 @@ def test_profile_picture_url_length_exceeded(profile_picture_url, user_base_data
     user_base_data["profile_picture_url"] = profile_picture_url
     with pytest.raises(ValidationError):
         UserBase(**user_base_data)
+
+# Tests for password validation
+# List of passwords and their expected validation messages
+password_test_cases = [
+    ("Space Password123!", "Password must not contain spaces."),
+    ("Short7!", "String should have at least 8 characters."),
+    ("A" * 255 + "1a!", "String should have at most 255 characters"),
+    ("1startswithdigit", "Password must start with a letter."),  # Testing start with a digit
+    ("!starts!with!special", "Password must start with a letter."),  # Testing start with a special character
+    ("nouppercase123!", "Password must contain at least one uppercase letter."),
+    ("NOLOWERCASE123!", "Password must contain at least one lowercase letter."),
+    ("NoDigitPassword!", "Password must contain at least one digit."),
+    ("NoSpecialCharacter123", "Password must contain at least one special character."),
+    ("ValidPassword1!", None)  # This is assumed to be a valid password
+]
+
+@pytest.mark.parametrize("password, expected_error", password_test_cases)
+def test_password_validation(user_create_data, password, expected_error):
+    user_data = {**user_create_data, "password": password}
+    if expected_error:
+        with pytest.raises(ValidationError, match=expected_error):
+            UserCreate(**user_data)
+    else:
+        assert UserCreate(**user_data).password == password, "Valid password should pass validation without errors."
