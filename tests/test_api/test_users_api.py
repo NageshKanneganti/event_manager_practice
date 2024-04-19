@@ -103,7 +103,19 @@ async def test_create_user_duplicate_username(async_client, user):
     }
     response = await async_client.post("/register/", json=user_data)
     assert response.status_code == 400
-    assert "Username already exists" in response.json().get("detail", "")
+    assert "Username and/or Email already exist" in response.json().get("detail", "")
+
+@pytest.mark.asyncio
+async def test_create_user_duplicate_email(async_client, user):
+    # Use a unique username but the same email as the existing 'user'
+    user_data = {
+        "username": "unique_username_123",
+        "email": user.email,
+        "password": "AnotherPassword123!",
+    }
+    response = await async_client.post("/register/", json=user_data)
+    assert response.status_code == 400
+    assert "Username and/or Email already exist" in response.json().get("detail", "")
 
 @pytest.mark.asyncio
 async def test_create_user_invalid_email(async_client):
@@ -142,3 +154,14 @@ async def test_delete_user_does_not_exist(async_client, token):
     delete_response = await async_client.delete(f"/users/{non_existent_user_id}", headers=headers)
     assert delete_response.status_code == 404
 
+# Test for register
+@pytest.mark.asyncio
+async def test_register_success(async_client):
+    user_data = {
+        "username": "newuniqueuser123",
+        "email": "newunique@example.com",
+        "password": "SecurePassword123!",
+    }
+    response = await async_client.post("/register/", json=user_data)
+    assert response.status_code == 200
+    assert "id" in response.json()
