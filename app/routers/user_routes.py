@@ -137,7 +137,6 @@ async def create_user(user: UserCreate, request: Request, db: AsyncSession = Dep
     if not created_user:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user")
     
-    
     return UserResponse.model_construct(
         id=created_user.id,
         bio=created_user.bio,
@@ -154,8 +153,16 @@ async def create_user(user: UserCreate, request: Request, db: AsyncSession = Dep
 
 @router.get("/users/", response_model=UserListResponse, name="list_users", tags=["User Management"])
 async def list_users(request: Request, skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_async_db), token: str = Depends(oauth2_scheme)):
+    # Validate skip and limit values
+    if skip < 0 or skip > 10:
+        raise HTTPException(status_code=400, detail="Skip parameter is out of range. Must be between 0 and 10.")
+    if limit < 1 or limit > 10:  # Assuming 100 is the maximum allowed limit
+        raise HTTPException(status_code=400, detail="Limit parameter is out of range. Must be between 1 and 10.")
+
     total_users = await UserService.count(db)
     users = await UserService.list_users(db, skip=skip, limit=limit)
+    if not users and (skip > 0 or limit > 0):  # Additional check if no users are found and parameters are non-zero
+        raise HTTPException(status_code=400, detail="No users found for the provided skip and limit.")
 
     user_responses = [UserResponse.model_construct(
         id=user.id,

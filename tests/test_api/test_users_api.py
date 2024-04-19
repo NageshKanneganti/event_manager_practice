@@ -95,7 +95,7 @@ async def test_login_success(async_client, user):
     assert response.json()["token_type"] == "bearer"
 
 @pytest.mark.asyncio
-async def test_create_user_duplicate_username(async_client, user):
+async def test_register_user_duplicate_username(async_client, user):
     user_data = {
         "username": user.username,
         "email": "unique@example.com",
@@ -106,7 +106,7 @@ async def test_create_user_duplicate_username(async_client, user):
     assert "Username and/or Email already exist" in response.json().get("detail", "")
 
 @pytest.mark.asyncio
-async def test_create_user_duplicate_email(async_client, user):
+async def test_register_user_duplicate_email(async_client, user):
     # Use a unique username but the same email as the existing 'user'
     user_data = {
         "username": "unique_username_123",
@@ -165,3 +165,48 @@ async def test_register_success(async_client):
     response = await async_client.post("/register/", json=user_data)
     assert response.status_code == 200
     assert "id" in response.json()
+
+# Tests for list_users
+@pytest.fixture
+async def create_users(async_client, token):
+    users_data = [
+        {"username": "user1", "email": "user1@example.com", "password": "Password123!"},
+        {"username": "user2", "email": "user2@example.com", "password": "Password123!"},
+        {"username": "user3", "email": "user3@example.com", "password": "Password123!"},
+    ]
+    headers = {"Authorization": f"Bearer {token}"}
+    for user_data in users_data:
+        await async_client.post("/users/", json=user_data, headers=headers)
+
+@pytest.mark.asyncio
+async def test_list_users_pagination(async_client, create_users, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    # Test fetching the first page
+    response = await async_client.get("/users/?skip=0&limit=2", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data['items']) == 2  # Check that only two users are returned
+
+    # Test fetching the second page
+    response = await async_client.get("/users/?skip=2&limit=2", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data['items']) == 1  # Assuming you have three users in total
+
+@pytest.mark.asyncio
+async def test_list_users_no_users_found(async_client, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    # Assuming skip is set beyond the range of existing users
+    response = await async_client.get("/users/?skip=3&limit=10", headers=headers)
+    assert response.status_code == 400
+    assert "No users found" in response.json().get("detail", "")
+
+@pytest.mark.asyncio
+async def test_list_users_with_valid_parameters(async_client, create_users, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = await async_client.get("/users/?skip=0&limit=5", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert 'items' in data
+    assert len(data['items']) == 3  # Check if all created users are listed
+
