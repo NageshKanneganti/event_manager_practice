@@ -65,13 +65,11 @@
 <br>
 
 ## Reflective Summary
-```
 Reflecting on my role as a software QA analyst for the class assignment, I realized the critical importance of detail and thoroughness. Navigating the codebase was like detective work, aiming to uncover and resolve hidden issues. This hands-on approach enriched my technical skills, particularly in understanding API failures and the necessity of robust testing. The assignment sharpened my abilities to read complex documentation and troubleshoot code, which are essential skills in any tech role.
 
 The project also highlighted the importance of proficiency with tools and individual initiative in the tech world. Using GitHub, I managed various tasks such as forking repositories, enabling issues, creating branches, syncing updates, making and committing fixes, and merging changes. This shift towards more autonomous management of my contributions required effective use of commit messages and issue tracking for clear communication. While working independently, these tools were crucial for maintaining alignment with my peers, underlining the need for effective remote collaboration infrastructure.
 
 Overall, this project extended beyond mastering software QA technicalities; it provided insights into effective teamwork in a tech environment. Future assignments could benefit from incorporating structured peer reviews and cross-functional tasks to better prepare us for real-world challenges, enhancing both technical and collaborative skills.
-```
 <br>
 
 ## Coverage Report
