@@ -103,6 +103,14 @@ class UserBase(BaseModel):
         
         return normalized_username  # Return the normalized version for storage and further handling
 
+    @validator('email')
+    def validate_email(cls, v):
+        # normalize the email to lowercase
+        normalized_email = v.lower()
+        if not re.search(r"\.(com|org|edu|net|gov)$", normalized_email):
+            raise ValueError("Email must end with one of the following domains: .com, .org, .edu, .net, .gov")
+        return normalized_email
+
     @validator('full_name')
     def validate_full_name(cls, v):
         if v and not re.match(r"^[a-zA-Z\s'-]+$", v):

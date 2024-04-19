@@ -178,3 +178,42 @@ def test_password_validation(user_create_data, password, expected_error):
             UserCreate(**user_data)
     else:
         assert UserCreate(**user_data).password == password, "Valid password should pass validation without errors."
+
+# Tests for validate email
+@pytest.mark.parametrize("input_email, expected_email", [
+    ("John.Doe@example.com", "john.doe@example.com"),  # Mixed case to lowercase
+    ("JANE.DOE@EXAMPLE.COM", "jane.doe@example.com"),  # Upper case to lowercase
+    ("joe.bloggs@Example.org", "joe.bloggs@example.org"),  # Domain part normalization
+    ("sally.smith@EXAMPLE.EDU", "sally.smith@example.edu"),  # Entire email normalization
+])
+def test_email_normalization(input_email, expected_email):
+    # Create a UserBase instance with the input email
+    user = UserBase(username="default_username_123", email=input_email)
+    # Check that the email has been normalized to lowercase
+    assert user.email == expected_email, f"Email should be normalized to {expected_email} but got {user.email}"
+
+@pytest.mark.parametrize("email", [
+    "user@example.com",
+    "contact@organization.org",
+    "admin@agency.gov",
+    "info@educational.edu",
+    "support@network.net",
+    "invalid@domain.xyz"  # This should fail
+])
+def test_email_domain_validation(email):
+    if email.endswith((".com", ".org", ".gov", ".edu", ".net")):
+        # This should pass validation
+        user = UserBase(username="default_username_123", email=email)  # Provide a default username
+        assert user.email == email.lower()  # Use the instantiated user object for comparison
+    else:
+        # This should raise a validation error
+        with pytest.raises(ValidationError):
+            UserBase(email=email)
+
+@pytest.mark.parametrize("invalid_email", [
+    "invalid@domain.xyz",  # Invalid domain that should trigger a validation error
+    "username@localhost"  # Typically invalid for internet-facing applications
+])
+def test_invalid_email_domain(invalid_email):
+    with pytest.raises(ValidationError):
+        UserBase(username="default_username", email=invalid_email)
